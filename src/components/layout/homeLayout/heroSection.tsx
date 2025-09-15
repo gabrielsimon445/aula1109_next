@@ -21,7 +21,7 @@ export default function HeroSection() {
                 </div>
                 <div className="hidden md:block">
                     <Image 
-                        src="/hero-image.png"
+                        src="/gato.png"
                         alt="Hero Image"
                         width={500}
                         height={300}

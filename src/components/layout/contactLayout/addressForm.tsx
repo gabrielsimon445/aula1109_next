@@ -6,12 +6,13 @@ import { CEP_MASK } from "@/lib/mask/formMask";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { IMaskInput } from "react-imask";
-import { handleValidCPF } from "@/lib/service/api/apicpf";
+import { apicep } from "@/lib/service/api/apicep";
 
 
 export default function AddressForm() {
   const {
     handleSubmit,
+    setValue,
     setError,
     control,
     formState: { errors },
@@ -24,6 +25,19 @@ export default function AddressForm() {
     console.log("Dados enviados com sucesso", data);
     return new Promise((resolve) => setTimeout(resolve, 2000));
   };
+
+  const handleCepBlur = async (cep: string) => {
+    try {
+      const address = await apicep(cep);
+      setValue("logradouro", address.rua);
+      setValue("bairro", address.bairro);
+      setValue("localidade", address.cidade);
+      setValue("estado", address.estado);
+    } catch (error) {
+      console.error("Erro ao buscar o CEP:", error);
+      setError("cep", { type: "manual", message: (error as Error).message });
+    }
+  }
 
   return (
     <form
@@ -48,17 +62,18 @@ export default function AddressForm() {
                 id="cep"
                 {...field}
                 className="block w-full rounded-md border-0 py-1.5 pl-10 pr-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
-                placeholder="000.000.000-00"
-                onBlur={async (e) => {
-                  const message = await handleValidCPF(e.currentTarget.value);
-                  setError("cpf", {type: "manual", message})
-                }}
+                placeholder="00000-000"
+                onBlur={(e) => {
+                    field.onBlur();
+                    handleCepBlur(e.target.value);
+                  }
+                }
               />
             )}
           />
         </div>
-        {errors.name && (
-          <p className="mt-2 text-sm text-red-500">{errors.name.message}</p>
+        {errors.cep && (
+          <p className="mt-2 text-sm text-red-500">{errors.cep.message}</p>
         )}
       </div>
       <div className="mt-3">
