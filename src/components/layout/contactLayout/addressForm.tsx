@@ -1,50 +1,45 @@
 "use client";
 
 import { MapPin, MapIcon } from "lucide-react";
-import { contactFormSchema, type ContactFormData } from "@/lib/validator/formValidator";
 import { CEP_MASK } from "@/lib/mask/formMask";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller } from "react-hook-form";
 import { IMaskInput } from "react-imask";
 import { apicep } from "@/lib/service/api/apicep";
+import type { FormComponentProps } from "./contactSection"; // Importe o tipo
 
-
-export default function AddressForm() {
-  const {
-    handleSubmit,
-    setValue,
-    setError,
-    control,
-    formState: { errors },
-  } = useForm<ContactFormData>({
-    resolver: zodResolver(contactFormSchema),
-    defaultValues: { cep: "", logradouro: "", bairro: "", localidade: "", estado: "" },
-  });
-
-  const handleSubmitContact = (data: ContactFormData) => {
-    console.log("Dados enviados com sucesso", data);
-    return new Promise((resolve) => setTimeout(resolve, 2000));
-  };
+export default function AddressForm({
+  control,
+  formState,
+  setValue,
+  setError,
+}: FormComponentProps) {
+  const { errors } = formState;
 
   const handleCepBlur = async (cep: string) => {
+    // Remove caracteres não numéricos para a validação
+    const cleanCep = cep.replace(/\D/g, "");
+    if (cleanCep.length !== 8) {
+      // Opcional: não fazer nada se o CEP não estiver completo
+      return;
+    }
+
     try {
       const address = await apicep(cep);
-      setValue("logradouro", address.rua);
-      setValue("bairro", address.bairro);
-      setValue("localidade", address.cidade);
-      setValue("estado", address.estado);
+      setValue("logradouro", address.rua, { shouldValidate: true });
+      setValue("bairro", address.bairro, { shouldValidate: true });
+      setValue("localidade", address.cidade, { shouldValidate: true });
+      setValue("estado", address.estado, { shouldValidate: true });
+      setError("cep", {}); // Limpa o erro caso a busca seja bem-sucedida
     } catch (error) {
-      console.error("Erro ao buscar o CEP:", error);
       setError("cep", { type: "manual", message: (error as Error).message });
     }
-  }
+  };
 
   return (
-    <form
-      className="bg-white p-8 rounded-lg shadow-md max-w-lg mx-auto text-center"
-      onSubmit={handleSubmit(handleSubmitContact)}
-    >
-      <div>
+    <>
+      <div className="mt-3">
+        {" "}
+        {/* Adicionado mt-3 para espaçamento */}
         <label className="block text-gray-700 font-bold" htmlFor="cep">
           CEP
         </label>
@@ -60,14 +55,14 @@ export default function AddressForm() {
                 mask={CEP_MASK}
                 type="text"
                 id="cep"
-                {...field}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={() => {
+                  field.onBlur();
+                  handleCepBlur(field.value);
+                }}
                 className="block w-full rounded-md border-0 py-1.5 pl-10 pr-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
                 placeholder="00000-000"
-                onBlur={(e) => {
-                    field.onBlur();
-                    handleCepBlur(e.target.value);
-                  }
-                }
               />
             )}
           />
@@ -76,8 +71,10 @@ export default function AddressForm() {
           <p className="mt-2 text-sm text-red-500">{errors.cep.message}</p>
         )}
       </div>
+
+      {/* Repita para os outros campos, corrigindo a exibição do erro */}
       <div className="mt-3">
-        <label className="block text-gray-700 font-bold" htmlFor="rua">
+        <label className="block text-gray-700 font-bold" htmlFor="logradouro">
           Rua
         </label>
         <div className="relative mt-1">
@@ -88,9 +85,9 @@ export default function AddressForm() {
             name="logradouro"
             control={control}
             render={({ field }) => (
-              <IMaskInput
+              <input /* Pode ser input normal se não precisar de máscara */
                 type="text"
-                id="rua"
+                id="logradouro"
                 {...field}
                 className="block w-full rounded-md border-0 py-1.5 pl-10 pr-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
                 placeholder="Digite sua rua"
@@ -98,10 +95,13 @@ export default function AddressForm() {
             )}
           />
         </div>
-        {errors.cpf && (
-          <p className="mt-2 text-sm text-red-500">{errors.cpf.message}</p>
+        {errors.logradouro && (
+          <p className="mt-2 text-sm text-red-500">
+            {errors.logradouro.message}
+          </p>
         )}
       </div>
+
       <div className="mt-3">
         <label className="block text-gray-700 font-bold" htmlFor="bairro">
           Bairro
@@ -114,7 +114,7 @@ export default function AddressForm() {
             name="bairro"
             control={control}
             render={({ field }) => (
-              <IMaskInput
+              <input
                 type="text"
                 id="bairro"
                 {...field}
@@ -124,10 +124,11 @@ export default function AddressForm() {
             )}
           />
         </div>
-        {errors.cpf && (
-          <p className="mt-2 text-sm text-red-500">{errors.cpf.message}</p>
+        {errors.bairro && (
+          <p className="mt-2 text-sm text-red-500">{errors.bairro.message}</p>
         )}
       </div>
+
       <div className="mt-3">
         <label className="block text-gray-700 font-bold" htmlFor="localidade">
           Cidade
@@ -140,7 +141,7 @@ export default function AddressForm() {
             name="localidade"
             control={control}
             render={({ field }) => (
-              <IMaskInput
+              <input
                 type="text"
                 id="localidade"
                 {...field}
@@ -150,10 +151,13 @@ export default function AddressForm() {
             )}
           />
         </div>
-        {errors.cpf && (
-          <p className="mt-2 text-sm text-red-500">{errors.cpf.message}</p>
+        {errors.localidade && (
+          <p className="mt-2 text-sm text-red-500">
+            {errors.localidade.message}
+          </p>
         )}
       </div>
+
       <div className="mt-3">
         <label className="block text-gray-700 font-bold" htmlFor="estado">
           Estado
@@ -166,7 +170,7 @@ export default function AddressForm() {
             name="estado"
             control={control}
             render={({ field }) => (
-              <IMaskInput
+              <input
                 type="text"
                 id="estado"
                 {...field}
@@ -176,13 +180,10 @@ export default function AddressForm() {
             )}
           />
         </div>
-        {errors.cpf && (
-          <p className="mt-2 text-sm text-red-500">{errors.cpf.message}</p>
+        {errors.estado && (
+          <p className="mt-2 text-sm text-red-500">{errors.estado.message}</p>
         )}
       </div>
-      <button className="w-full bg-indigo-500 rounded-lg p-1 mt-5">
-        Enviar
-      </button>
-    </form>
+    </>
   );
 }

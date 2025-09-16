@@ -9,7 +9,7 @@ export const contactFormSchema = z.object({
     logradouro: z.string().min(8, {message: 'Logradouro inválido'}),
     bairro: z.string().min(8, {message: 'Bairro inválido'}),
     localidade: z.string().min(8, {message: 'Localidade inválido'}),
-    estado: z.string().min(8, {message: 'Estado inválido'}),
+    estado: z.string().min(2, {message: 'Estado inválido'}),
 })
 
 export type ContactFormData = z.infer<typeof contactFormSchema>;
